@@ -12,7 +12,7 @@ def send_one():
 
     # this uses the default configuration (for example from the config file)
     # see https://python-can.readthedocs.io/en/stable/configuration.html
-    with can.interface.Bus() as bus:
+    with can.interface.Bus(bustype='ecom', app_name='CANalyzer', channel=0, bitrate=250000) as bus:
 
         # Using specific buses works similar:
         # bus = can.interface.Bus(bustype='socketcan', channel='vcan0', bitrate=250000)
@@ -22,7 +22,7 @@ def send_one():
         # ...
 
         msg = can.Message(
-            arbitration_id=0xC0FFEE, data=[0, 25, 0, 1, 3, 1, 4, 1], is_extended_id=True
+            arbitration_id=0xC0FFEE, data=[0, 25, 0, 1, 3, 1, 4, 1], is_extended_id=False
         )
 
         try:

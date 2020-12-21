@@ -412,11 +412,20 @@ class KvaserBus(BusABC):
         fd = kwargs.get("fd", False)
         data_bitrate = kwargs.get("data_bitrate", None)
 
+        # Parse the channel
         try:
             channel = int(channel)
         except ValueError:
-            raise ValueError("channel must be an integer")
-        self.channel = channel
+            # Channel is not an integer
+            if (isinstance(channel) is not str):
+                raise ValueError("channel must be an integer or an str")
+            # Channel is a string, it should be the channel info.
+            self.channel = None
+            self.channel_info = channel
+        else:
+            # Channel is an integer,
+            self.channel = channel
+            self.channel_info = None
 
         log.debug("Initialising bus instance")
         self.single_handle = single_handle
@@ -425,11 +434,16 @@ class KvaserBus(BusABC):
         canGetNumberOfChannels(ctypes.byref(num_channels))
         num_channels = int(num_channels.value)
         log.info("Found %d available channels", num_channels)
+
+        # Find the channel among the available channels
+        # Search by channel number or channel info.
         for idx in range(num_channels):
             channel_info = get_channel_info(idx)
             log.info("%d: %s", idx, channel_info)
             if idx == channel:
                 self.channel_info = channel_info
+            elif channel_info == self.channel_info:
+                self.channel = idx
 
         flags = 0
         if accept_virtual:
@@ -660,14 +674,20 @@ class KvaserBus(BusABC):
     @staticmethod
     def _detect_available_configs():
         num_channels = ctypes.c_int(0)
+        print(f"num_channels:{num_channels.value}")
         try:
             canGetNumberOfChannels(ctypes.byref(num_channels))
         except Exception:
             pass
-        return [
-            {"interface": "kvaser", "channel": channel}
-            for channel in range(num_channels.value)
-        ]
+
+        channel_list = []
+        for channel in range(num_channels.value):
+
+            channel_info = get_channel_info(channel)
+            #print(f'Channel:{channel} : {channel_info}')
+            channel_list.append({"interface": "kvaser", "channel": channel, 'info':channel_info})
+
+        return channel_list
 
 
 def get_channel_info(channel):
